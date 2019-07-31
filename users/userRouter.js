@@ -8,6 +8,7 @@ const db = require('./userDb');
 const dbPost = require('../posts/postDb');
 
 //Requests section
+//
 router.post('/', (req, res) => {
   const newUser = req.body;
   const { name } = newUser;
@@ -89,16 +90,16 @@ router.get('/:id', (req, res) => {
 });
 
 //this should be done on the postRouter instead
-router.get('/:id/posts', (req, res) => {
+router.get('/:id/posts', validateUserId, (req, res) => {
   const id = req.params.id;
   db.getUserPosts(id)
-    .then(post => {
-      if (!post) {
+    .then(user => {
+      if (!user) {
         res
           .status(400)
           .json({ message: 'The post with the specified ID does not exist.' });
       } else {
-        res.status(200).json({ post });
+        res.status(200).json({ user });
       }
     })
     .catch(err => {
@@ -154,7 +155,23 @@ router.put('/:id', (req, res) => {
 
 //custom middleware
 
-function validateUserId(req, res, next) {}
+function validateUserId(req, res, next) {
+  // console.log('Hello');
+  // next();
+  // set id to a variable if one is available
+  const { id } = req.params;
+  const user = db.getUserPosts(id);
+  if (user) {
+    //store user object
+    req.user = user;
+    // console.log('User ID:', id);
+    next();
+  } else {
+    res.status(400).json({
+      message: 'invalid user id'
+    });
+  }
+}
 
 function validateUser(req, res, next) {}
 

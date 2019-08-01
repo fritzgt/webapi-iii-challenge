@@ -30,7 +30,7 @@ router.post('/', validateUser, (req, res) => {
 });
 
 //this should be done on the postRouter instead
-router.post('/:id/posts', (req, res) => {
+router.post('/:id/posts', validatePost, (req, res) => {
   const newPost = req.body;
   const { text, user_id } = newPost;
   //   console.log('Object from post', newPost);
@@ -207,6 +207,28 @@ async function validateUser(req, res, next) {
   }
 }
 
-function validatePost(req, res, next) {}
+function validatePost(req, res, next) {
+  try {
+    const body = req.body;
+    const { text } = body;
+
+    if (!body) {
+      console.log('Middleware validation: missing Body');
+      res.status(400).json({
+        message: 'missing post data'
+      });
+    } else if (!text) {
+      console.log('Middleware validation: missing text field');
+      res.status(400).json({
+        message: 'missing required text field'
+      });
+    } else {
+      console.log('Middleware validatePost unsuccessful');
+      next();
+    }
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+}
 
 module.exports = router;

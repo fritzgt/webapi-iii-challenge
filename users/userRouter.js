@@ -8,8 +8,8 @@ const db = require('./userDb');
 const dbPost = require('../posts/postDb');
 
 //Requests section
-//
-router.post('/', (req, res) => {
+//create new user with custom middleware
+router.post('/', validateUser, (req, res) => {
   const newUser = req.body;
   const { name } = newUser;
   db.insert(newUser)
@@ -70,7 +70,7 @@ router.get('/', (req, res) => {
   });
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', validateUserId, (req, res) => {
   const id = req.params.id;
   db.getById(id)
     .then(user => {
@@ -89,7 +89,7 @@ router.get('/:id', (req, res) => {
     });
 });
 
-//this should be done on the postRouter instead
+//this should be done on the postRouter instead with custom middleware
 router.get('/:id/posts', validateUserId, (req, res) => {
   const id = req.params.id;
   db.getUserPosts(id)
@@ -108,8 +108,8 @@ router.get('/:id/posts', validateUserId, (req, res) => {
         .json({ error: 'The post information could not be retrieved.' });
     });
 });
-
-router.delete('/:id', (req, res) => {
+//Delete with custom middleware
+router.delete('/:id', validateUserId, (req, res) => {
   const id = req.params.id;
   db.remove(id)
     .then(deleted => {
@@ -155,25 +155,57 @@ router.put('/:id', (req, res) => {
 
 //custom middleware
 
-function validateUserId(req, res, next) {
-  // console.log('Hello');
-  // next();
-  // set id to a variable if one is available
-  const { id } = req.params;
-  const user = db.getUserPosts(id);
-  if (user) {
-    //store user object
-    req.user = user;
-    // console.log('User ID:', id);
-    next();
-  } else {
-    res.status(400).json({
-      message: 'invalid user id'
-    });
+//async function
+//by using the method getById is enough because if the user does not exist
+//it will validate to false on all request by id
+async function validateUserId(req, res, next) {
+  try {
+    // console.log('Hello');
+    // next();
+    // set id to a variable if one is available
+    const { id } = req.params;
+    const user = await db.getById(id);
+    if (user) {
+      //store user object
+      req.user = user;
+      // console.log('Middleware validateUserId successful');
+      next();
+    } else {
+      // console.log('Middleware validation: invalid user id');
+      res.status(400).json({
+        message: 'invalid user id'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ error });
   }
 }
-
-function validateUser(req, res, next) {}
+//validates the `body` on a request to create a new user
+function validateUser(req, res, next) {
+  // console.log('validateUser', req.body);
+  // next();
+  try {
+    const body = req.body;
+    const { name } = body;
+    // const user = await db.insert(name);
+    if (!`${body}`) {
+      console.log('Middleware validation: missing user data');
+      res.status(400).json({
+        message: 'missing user data'
+      });
+    } else if (!name) {
+      console.log('Middleware validation: missing user name');
+      res.status(400).json({
+        message: 'missing required name field'
+      });
+    } else {
+      console.log('Middleware validateUser successful');
+      next();
+    }
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+}
 
 function validatePost(req, res, next) {}
 

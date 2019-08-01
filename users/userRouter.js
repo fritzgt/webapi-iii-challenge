@@ -181,15 +181,15 @@ async function validateUserId(req, res, next) {
   }
 }
 //validates the `body` on a request to create a new user
-function validateUser(req, res, next) {
+async function validateUser(req, res, next) {
   // console.log('validateUser', req.body);
   // next();
   try {
     const body = req.body;
     const { name } = body;
-    // const user = await db.insert(name);
-    if (!`${body}`) {
-      console.log('Middleware validation: missing user data');
+
+    if (!body) {
+      console.log('Middleware validation: missing Body');
       res.status(400).json({
         message: 'missing user data'
       });
